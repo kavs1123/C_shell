@@ -1,0 +1,1 @@
+void replaceStringInPlace(char *input, const char *old_str, const char *new_str);

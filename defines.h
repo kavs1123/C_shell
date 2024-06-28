@@ -1,0 +1,21 @@
+#define PATH_LEN 1024
+#define INPUT_SIZE 4096
+#define MAX_ARG_COUNT 64
+#define COLOR_DEFAULT "\x1B[0m"
+#define COLOR_DIRECTORY "\x1B[34m"  // Blue
+#define COLOR_EXECUTABLE "\x1B[32m" // Green
+
+
+#define MAX_COMMAND_LENGTH 100
+#define MAX_PAST_EVENTS 15
+
+
+
+
+#define MAX_INPUT_LENGTH 1024
+#define MAX_ARGS 64
+#define MAX_BG_PROCESSES 10
+
+#define MAX_PATH_LENGTH 1024
+
+
