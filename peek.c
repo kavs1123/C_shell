@@ -170,6 +170,9 @@ void processflag(int*showHidden,int*showDetails,char*flag){
 
 
 void peek(int showHidden, int showDetails, char *path, char *homeDir) {
+
+    
+
     if (!path) {
         peek(showHidden, showDetails, getcwd(NULL, 0), homeDir);
         return;

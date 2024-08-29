@@ -63,126 +63,32 @@ void save_pastevents(char pastevents[MAX_PAST_EVENTS][MAX_COMMAND_LENGTH],char* 
     }
 }
 
-void pastevents_execute(char*command_input){
-    char homeDir[1024];
-    getCurrentDirectory(homeDir, sizeof(homeDir));
+void pastevents_execute(char*command_input,global_ptr myglobal){
 
-    struct BackgroundProcess bg_processes[MAX_BG_PROCESSES] = {0};
-    int pastflag=0;
-    
-
-    char *command = strtok(command_input, " \t\n");
-    char pastevents[MAX_PAST_EVENTS][MAX_COMMAND_LENGTH]={0};
-
-    if (command == NULL) {
-        printf("Invalid command.\n");
-        return ;
+    if(strchr(command_input,'|')!=NULL){
+        execute_command_with_pipes(command_input,myglobal);
     }
-
-    char path_of_file[4096];
-    sprintf(path_of_file,"%s/pastevents.txt",homeDir);
-
-    load_pastevents(pastevents,path_of_file);
-
-    char* command_copy = (char*)malloc(sizeof(char)*4096);
-            
-            
-    strcpy(command_copy,command_input);
-
-    
-
-    
-
-    // Handle "warp" command
-    if (strcmp(command, "warp") == 0) {
-        char *path = strtok(NULL, " \t\n");
-        while (path != NULL) {
-            warp(path, homeDir);
-            path = strtok(NULL, " \t\n");
-        }
-
-        add_to_pastevents(pastevents, command_copy);
-        save_pastevents(pastevents,path_of_file);
+    else if((strchr(command_input,'<')!=NULL)||(strchr(command_input,'>')!=NULL)){
+        execute_the_command_with_io(command_input,myglobal);
     }
-    else if (strcmp(command, "peek") == 0) {
-        int showHidden=0;int showDetails=0;
-        char*path;
-
-        char* check = strtok(NULL," \t\n");
-        
-        if (check){
-
-            while(check!=NULL && check[0]=='-' && check[1]!='\0'){
-                
-
-                processflag(&showHidden,&showDetails,check);
-                
-                check=strtok(NULL," \t\n");
-
-            }
-            
-            path=check;
-        }
-        
-        peek(showHidden,showDetails,path,homeDir);
-
-        add_to_pastevents(pastevents, command_copy);
-        save_pastevents(pastevents,path_of_file);
-
-        
-    }
-
-    else if(strcmp(command,"proclore")==0){
-        char*arg = strtok(NULL," \t\n");
-
-        proclore_main(arg);
-        add_to_pastevents(pastevents, command_copy);
-        save_pastevents(pastevents,path_of_file);
-    }
-
-    else if(strcmp(command,"seek")==0){
-        int isDirectory=0;int isFile=0;int isexecute =0;
-        char* target_dir;
-        char* file_to_find;
-        char*check =strtok(NULL," \t\n");
-        while(check[0]=='-'){
-            process_flag_seek(&isDirectory,&isFile,&isexecute,check);
-            
-            check=strtok(NULL," \t\n");
-        }
-        file_to_find=check;
-
-        target_dir=strtok(NULL," \t\n");
-
-
-        seek_main(target_dir,file_to_find,isDirectory,isFile,isexecute,homeDir);
-
-        add_to_pastevents(pastevents, command_copy);
-        save_pastevents(pastevents,path_of_file);
-
-
-                
-                    
-                
+    else{
+        execute_the_command(command_input,myglobal);
     }
 
     
-    else {
-        others_main(bg_processes,command);
-        add_to_pastevents(pastevents, command_copy);
-        save_pastevents(pastevents,path_of_file);
-    }
+
+
+
+    
+    execute_the_command(command_input,myglobal);
     
 
-        
-    
-    free(command_copy);
-    pastflag=0;
+ 
 
         
 }
 
-void pastevents_main(char* command_from_main,char*user_input,char pastevents[MAX_PAST_EVENTS][MAX_COMMAND_LENGTH],char* path_of_file){
+void pastevents_main(char* command_from_main,char*user_input,char pastevents[MAX_PAST_EVENTS][MAX_COMMAND_LENGTH],char* path_of_file,global_ptr myglobal){
     
     
     if (command_from_main == NULL) {
@@ -206,9 +112,14 @@ void pastevents_main(char* command_from_main,char*user_input,char pastevents[MAX
         
         if (index > 0 && index <= MAX_PAST_EVENTS && pastevents[index - 1][0] != '\0') {
 
+            if(isspace(pastevents[index - 1][strlen(pastevents[index - 1])-1])){
+                pastevents[index - 1][strlen(pastevents[index - 1])-1]='\0';
+            }
+
+
             
            
-            pastevents_execute(pastevents[index - 1]);
+            pastevents_execute(pastevents[index - 1],myglobal);
             
            
         } 

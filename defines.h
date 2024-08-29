@@ -14,8 +14,11 @@
 
 #define MAX_INPUT_LENGTH 1024
 #define MAX_ARGS 64
-#define MAX_BG_PROCESSES 10
+#define MAX_BG_PROCESSES 100
 
 #define MAX_PATH_LENGTH 1024
+
+#define MAX_BUFFER_SIZE 1024
+
 
 

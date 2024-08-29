@@ -11,6 +11,7 @@ void execute_command(char *args[], int background, struct BackgroundProcess bg_p
         printf("'%s' is not a valid command \n",args[0]);
         exit(1);
     } else if (pid > 0) {  // Parent process
+        global_ptr_i_am_sharing->fg_id=pid;
         if (!background) {
             struct timeval start, end;
             gettimeofday(&start, NULL);
@@ -81,6 +82,8 @@ void others_main(struct BackgroundProcess bg_processes[],char*command){
         token = strtok(NULL, " \t\n");
     }
     args[arg_count] = NULL;
+
+
     
 
     

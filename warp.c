@@ -7,8 +7,10 @@
 
 char previous_dir[PATH_LEN] = "";
 
-void warp(const char *path, char *home_dir) {
+void warp(const char *path, char* home_dir) {
     char resolved_path[PATH_LEN];
+
+    
 
     // If the path starts with "~/" or "~/", replace it with the user's home directory
     if (path[0] == '~' && (path[1] == '/' || path[1] == '\0')) {
@@ -17,7 +19,10 @@ void warp(const char *path, char *home_dir) {
             return;
         }
         snprintf(resolved_path, sizeof(resolved_path), "%s%s", home_dir, path + 1);
+        
     }
+
+
     // If the path is ".", use the current directory
     else if (strcmp(path, ".") == 0) {
         if (getcwd(resolved_path, sizeof(resolved_path)) == NULL) {

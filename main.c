@@ -1,44 +1,57 @@
 
 #include "headers.h"
 
-int main() {
-    // Keep accepting commands
-    char *args[MAX_ARG_COUNT];
-    char input[4096];
-    char homeDir[1024];
-    int pastflag=0;
-    struct BackgroundProcess bg_processes[MAX_BG_PROCESSES] = {0};
+global_ptr global_ptr_i_am_sharing =NULL;
+
+
+
+
+void run_shell(global_ptr my_global){
 
     const char* ampersand = "&";
     const char* ampersand_semi="&;";
 
-    char pastevents[MAX_PAST_EVENTS][MAX_COMMAND_LENGTH]={0};
-    getCurrentDirectory(homeDir, sizeof(homeDir));
+    
 
-    char path_of_file[4096];
-    sprintf(path_of_file,"%s/pastevents.txt",homeDir);
-
-    load_pastevents(pastevents,path_of_file);
-
-    give_initial_prompt();
     while (1) {
 
-        check_bg_processes(bg_processes);
+        sigset_t oldmask; sigemptyset(&oldmask); sigprocmask(SIG_BLOCK, NULL, &oldmask); 
+        sigaddset(&oldmask, SIGTSTP);
+        sigaddset(&oldmask, SIGINT);
+        sigaddset(&oldmask, SIGQUIT);
+        sigprocmask(SIG_UNBLOCK, &oldmask, NULL);
+
+        check_bg_processes(my_global->bg_processes);
 
         prompt_repeat();
+
+        my_global->state_of_shell=0;
+
+        
+        // printf("this is fine\n");
     
-        fgets(input, 4096, stdin);
+        char* checker = fgets(my_global->input, 4096, stdin);
 
-        replaceStringInPlace(input,ampersand,ampersand_semi);
+        if(checker==NULL){
+            printf("\n");
+            
+            exit(0);
+        }
 
-        char *commands[INPUT_SIZE];  
+        
+
+
+        replaceStringInPlace(my_global->input,ampersand,ampersand_semi);
+
+          
 
         
         int commandCount = 0;
-        char *command = strtok(input, ";");
+        my_global->state_of_shell=1;
+        char *command = strtok(my_global->input, ";");
         while (command != NULL && commandCount < INPUT_SIZE) {
 
-            commands[commandCount] = command;
+            my_global->commands[commandCount] = command;
             commandCount++;
             command = strtok(NULL, ";");
         }
@@ -47,110 +60,90 @@ int main() {
         for (int i = 0; i < commandCount; i++) {
 
             
-            char* command_copy = (char*)malloc(sizeof(char)*4096);
+            my_global->command_copy = (char*)malloc(sizeof(char)*4096);
             
             
-            strcpy(command_copy,commands[i]);
+            strcpy(my_global->command_copy,my_global->commands[i]);
 
-            char *command = strtok(commands[i], " \t\n");
 
-            if (command == NULL) {
-                printf("Invalid command.\n");
-                return 1;
+
+            if(strchr(my_global->commands[i],'|')!=NULL){
+                execute_command_with_pipes(my_global->commands[i],my_global);
             }
 
-            if (strcmp(command, "warp") == 0) {
-                char *path = strtok(NULL, " \t\n");
-                while (path != NULL) {
-                    warp(path, homeDir);
-                    path = strtok(NULL, " \t\n");
-                }
+            else if((strchr(my_global->commands[i],'<')!=NULL)||(strchr(my_global->commands[i],'>')!=NULL)){
 
-                add_to_pastevents(pastevents, command_copy);
-                save_pastevents(pastevents,path_of_file);
+                execute_the_command_with_io(my_global->commands[i],my_global);
             }
-            else if (strcmp(command, "peek") == 0) {
-                int showHidden=0;int showDetails=0;
-                char*path;
-
-                char* check = strtok(NULL," \t\n");
-                
-                if (check){
-
-                    while(check!=NULL && check[0]=='-' && check[1]!='\0'){
-                        
-
-                        processflag(&showHidden,&showDetails,check);
-                        
-                        check=strtok(NULL," \t\n");
-
-                    }
-                    
-                    path=check;
-                }
-                
-                peek(showHidden,showDetails,path,homeDir);
-
-                add_to_pastevents(pastevents, command_copy);
-                save_pastevents(pastevents,path_of_file);
-
-                
-            }
-            else if(strcmp(command,"pastevents")==0){
-
-                
-
-                char* arg = strtok(NULL," \t\n");
-                pastevents_main(arg,command_copy,pastevents,path_of_file);
-
-            }
-            else if(strcmp(command,"proclore")==0){
-                char*arg = strtok(NULL," \t\n");
-
-                proclore_main(arg);
-                add_to_pastevents(pastevents, command_copy);
-                save_pastevents(pastevents,path_of_file);
+            else{
+                execute_the_command(my_global->commands[i],my_global);
             }
 
-            else if(strcmp(command,"seek")==0){
-                int isDirectory=0;int isFile=0;int isexecute =0;
-                char* target_dir;
-                char* file_to_find;
-                char*check =strtok(NULL," \t\n");
-                while(check[0]=='-'){
-                    process_flag_seek(&isDirectory,&isFile,&isexecute,check);
-                    
-                    check=strtok(NULL," \t\n");
-                }
-                file_to_find=check;
-
-                target_dir=strtok(NULL," \t\n");
 
 
-                seek_main(target_dir,file_to_find,isDirectory,isFile,isexecute,homeDir);
-
-                add_to_pastevents(pastevents, command_copy);
-                save_pastevents(pastevents,path_of_file);
-
-
-                
-                    
-                
-            }
-            else {
-                others_main(bg_processes,command);
-                add_to_pastevents(pastevents, command_copy);
-                save_pastevents(pastevents,path_of_file);
-            }
             
-
-                
-            
-            free(command_copy);
-            pastflag=0;
 
         }
     }
+
+}
+
+
+int main() {
+    
+
+    
+    global_ptr  my_global = (global_ptr)malloc(sizeof(global));
+
+    my_global->homeDir=(char*)malloc(sizeof(char)*1024);
+
+
+    memset(my_global->bg_processes,0,MAX_BG_PROCESSES*sizeof(struct BackgroundProcess));
+
+    my_global->pastflag=0;
+
+
+
+    global_ptr_i_am_sharing = my_global;
+
+    // Keep accepting commands
+
+    // char homeDir[1024];
+    // int pastflag=0;
+    // struct BackgroundProcess bg_processes[MAX_BG_PROCESSES] = {0};
+
+    const char* ampersand = "&";
+    const char* ampersand_semi="&;";
+
+    for(int i=0; i<MAX_PAST_EVENTS;i++){
+        memset(my_global->pastevents[i],0,MAX_COMMAND_LENGTH*sizeof(char));
+    }
+
+
+
+    getcwd(my_global->homeDir,1024*sizeof(char));
+
+
+
+
+
+
+
+
+    // char path_of_file[4096];
+    sprintf(my_global->path_of_file,"%s/pastevents.txt",my_global->homeDir);
+
+    load_pastevents(my_global->pastevents,my_global->path_of_file);
+
+    give_initial_prompt();
+
+    signal(SIGINT, handle_ctrl_c);
+    signal(SIGTSTP, handle_ctrl_z);
+
+    run_shell(my_global);
+
+
+    
 
     return 0;
 }

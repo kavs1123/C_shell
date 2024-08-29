@@ -1,1 +1,1 @@
-void warp(const char *path, char *home_dir);
+void warp(const char *path, char* homeDir);
